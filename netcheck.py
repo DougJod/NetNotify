@@ -6,10 +6,12 @@ import urllib.request
 import urllib.error
 import datetime
 import os
-#from os.path import expanduser
 
 HOME = os.environ['HOME'] 
-#HOME = expanduser('~')
+LAST_IP_FILE = HOME+'/last_ip.txt'
+IP_LOG_FILE = HOME+'/ip_log.txt'
+
+IF_NAME = 'wlan0'
 SFDC_LOGIN_URL = 'https://login.salesforce.com/services/oauth2/token'
 SFDC_KEY = os.environ['SFDC_KEY'] 
 SFDC_SECRET = os.environ['SFDC_SECRET'] 
@@ -47,7 +49,7 @@ def sfdcAuthenticate() :
 # Append the old IP address to the ip change log file. 
 #######################################################
 def logOldIp(oldIp) :
-	log = open(HOME+'/ip_log.txt', 'a')
+	log = open(IP_LOG_FILE, 'a')
 	log.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' - Old IP: '+oldIp +'\n')
 	log.close()
 
@@ -57,7 +59,7 @@ def logOldIp(oldIp) :
 def hasIpChanged(currentIp) :
 	ipChanged = False
 	# read last IP from file	
-	f = open(HOME+'/last_ip.txt', 'r+')
+	f = open(LAST_IP_FILE, 'r+')
 	lastIp = f.read()
 	if (lastIp != currentIp) :
 		ipChanged = True
@@ -119,9 +121,12 @@ def sendChangeNotification(currentIp) :
 #####################
 
 # get the current IP of the wifi interface.
-currentIp = ni.ifaddresses('wlan0')[ni.AF_INET][0]['addr']
+currentIp = ni.ifaddresses(IF_NAME)[ni.AF_INET][0]['addr']
+
+# sanity test the IP format.
+validIp = (None != currentIp) and (currentIp.count('.') == 3)
 
 # if the IP has changed, send a notification with the new IP.
-if (hasIpChanged(currentIp)) :
+if (validIp AND hasIpChanged(currentIp)) :
 	sendChangeNotification(currentIp)
 
