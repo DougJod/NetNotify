@@ -127,6 +127,6 @@ currentIp = ni.ifaddresses(IF_NAME)[ni.AF_INET][0]['addr']
 validIp = (None != currentIp) and (currentIp.count('.') == 3)
 
 # if the IP has changed, send a notification with the new IP.
-if (validIp AND hasIpChanged(currentIp)) :
+if (validIp and hasIpChanged(currentIp)) :
 	sendChangeNotification(currentIp)
 
