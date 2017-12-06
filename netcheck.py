@@ -7,18 +7,25 @@ import urllib.error
 import datetime
 import os
 
-HOME = os.environ['HOME'] 
-LAST_IP_FILE = HOME+'/last_ip.txt'
+LAST_IP_FILE = HOME+'/last_ip.txt'  # this needs to exist. TODO: automatically create this on first run.
 IP_LOG_FILE = HOME+'/ip_log.txt'
-
 IF_NAME = 'wlan0'
+HOME = os.environ['HOME'] 
 SFDC_LOGIN_URL = 'https://login.salesforce.com/services/oauth2/token'
 SFDC_KEY = os.environ['SFDC_KEY'] 
 SFDC_SECRET = os.environ['SFDC_SECRET'] 
 SFDC_MENTION_ID = os.environ['SFDC_MENTION_ID']
+SFDC_SUBJECT_ID = os.environ['SFDC_SUBJECT_ID']
 SFDC_USER = os.environ['SFDC_USER'] 
 SFDC_PASS = os.environ['SFDC_PASS'] 
 SFDC_TOKEN = os.environ['SFDC_TOKEN'] 
+
+def logValues() :
+    print ('SFDC_SUBJECT_ID: ',SFDC_SUBJECT_ID)
+    print ('SFDC_USER: ',SFDC_USER)
+    #print ('SFDC_PASS: ',SFDC_PASS)
+    #print ('SFDC_TOKEN: ',SFDC_TOKEN)
+
 
 ############################################################################
 # Authenticate to SalesForce.
@@ -78,7 +85,8 @@ def sendChangeNotification(currentIp) :
 	oauthData = sfdcAuthenticate()
 	if 'access_token' in oauthData :
 	
-		chatterUrl = oauthData['instance_url']+'/services/data/v39.0/chatter/feed-elements';
+		feedUrl = oauthData['instance_url']+'/services/data/v41.0/chatter/feed-elements'
+        #groupUrl = oauthData['instance_url']+''
 
 		# message header
 		headerSegment = {}
@@ -95,15 +103,19 @@ def sendChangeNotification(currentIp) :
 
 		chatterPost = {}
 		chatterPost['feedElementType'] = 'FeedItem'
-		chatterPost['subjectId'] = 'me'
+		chatterPost['subjectId'] = SFDC_SUBJECT_ID
 		chatterPost['body'] = {} 
 		chatterPost['body']['messageSegments'] = [headerSegment, mentionSegment, messageSegment]
 
 		reqData = json.dumps(chatterPost)
 
-		req = urllib.request.Request(chatterUrl, data=reqData.encode('utf-8'))
+		req = urllib.request.Request(feedUrl, data=reqData.encode('utf-8'))
 		req.add_header('Content-Type','application/json')
 		req.add_header('Authorization','Bearer '+oauthData['access_token'])
+
+
+
+
 		try :
 			response = urllib.request.urlopen(req)
 			data = json.loads(response.read().decode('utf-8'))
@@ -119,6 +131,8 @@ def sendChangeNotification(currentIp) :
 ################################################################################
 # PROGRAM ENTRY POINT
 #####################
+
+logValues()
 
 # get the current IP of the wifi interface.
 currentIp = ni.ifaddresses(IF_NAME)[ni.AF_INET][0]['addr']
